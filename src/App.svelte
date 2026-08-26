@@ -148,12 +148,17 @@
   :global([data-theme='dark']) {
     --bg: #1c1a16;
     --panel-bg: #262319;
-    --text: #ece7db;
-    --muted: #a89f8d;
-    --border: #3a3527;
-    --accent: #c9a24b;
+    --text: #f5f2ea;
+    --muted: #c7bea9;
+    --border: #46402f;
+    --accent: #e0b45f;
     --accent-text: #1c1a16;
-    --error: #e08579;
+    --error: #f0a99c;
+    color-scheme: dark;
+  }
+
+  :global([data-theme='light']) {
+    color-scheme: light;
   }
 
   :global(body) {
@@ -284,6 +289,11 @@
     line-height: 1.5;
     background: var(--panel-bg);
     color: var(--text);
+  }
+
+  textarea::placeholder {
+    color: var(--muted);
+    opacity: 1;
   }
 
   .hint {
