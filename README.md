@@ -2,8 +2,6 @@
 
 Aplikasi web untuk mempermudah pembuatan teks pembagian tugas mengaji (khotmil Qur'an) periode berikutnya, biasa dibagikan lewat WhatsApp.
 
-**Live:** https://rendicahya.github.io/khotmil/
-
 ## Cara pakai
 
 1. Tempel teks pembagian tugas periode ini ke kotak pertama (tombol **Tempel** atau Ctrl+V).
