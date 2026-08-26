@@ -1,12 +1,39 @@
 <script>
   import { transformText, countJuzLines } from './lib/khotmil.js';
 
+  function getInitialTheme() {
+    try {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+    } catch (err) {
+      // ignore (e.g. storage disabled)
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  }
+
   let input = $state('');
   let copyStatus = $state('');
   let pasteError = $state('');
+  let theme = $state(getInitialTheme());
 
   let output = $derived(transformText(input));
   let juzCount = $derived(countJuzLines(input));
+
+  $effect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem('theme', theme);
+    } catch (err) {
+      // ignore (e.g. storage disabled)
+    }
+  });
+
+  function toggleTheme() {
+    theme = theme === 'dark' ? 'light' : 'dark';
+  }
 
   async function handlePaste() {
     pasteError = '';
@@ -36,6 +63,15 @@
 
 <main>
   <header>
+    <button
+      type="button"
+      class="theme-toggle"
+      onclick={toggleTheme}
+      aria-label={theme === 'dark' ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
+      title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+    >
+      {theme === 'dark' ? '☀️' : '🌙'}
+    </button>
     <h1>🌸 Khotmil Qur'an 🕋</h1>
     <p class="subtitle">Pembuat teks pembagian tugas mengaji</p>
   </header>
@@ -77,10 +113,32 @@
 </main>
 
 <style>
+  :global(:root) {
+    --bg: #f4f1ea;
+    --panel-bg: #fff;
+    --text: #2b2620;
+    --muted: #6b6255;
+    --border: #e2dccf;
+    --accent: #c9a24b;
+    --accent-text: #fff;
+    --error: #b3413b;
+  }
+
+  :global([data-theme='dark']) {
+    --bg: #1c1a16;
+    --panel-bg: #262319;
+    --text: #ece7db;
+    --muted: #a89f8d;
+    --border: #3a3527;
+    --accent: #c9a24b;
+    --accent-text: #1c1a16;
+    --error: #e08579;
+  }
+
   :global(body) {
     margin: 0;
-    background: #f4f1ea;
-    color: #2b2620;
+    background: var(--bg);
+    color: var(--text);
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
 
@@ -91,8 +149,28 @@
   }
 
   header {
+    position: relative;
     text-align: center;
     margin-bottom: 1.5rem;
+  }
+
+  .theme-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   }
 
   h1 {
@@ -102,13 +180,13 @@
 
   .subtitle {
     margin: 0;
-    color: #6b6255;
+    color: var(--muted);
     font-size: 0.95rem;
   }
 
   .panel {
-    background: #fff;
-    border: 1px solid #e2dccf;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 1rem;
     margin-bottom: 1.25rem;
@@ -134,9 +212,9 @@
   }
 
   button {
-    border: 1px solid #c9a24b;
-    background: #c9a24b;
-    color: #fff;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-text);
     padding: 0.45rem 0.9rem;
     border-radius: 8px;
     font-size: 0.9rem;
@@ -150,8 +228,8 @@
 
   button.ghost {
     background: transparent;
-    color: #6b6255;
-    border-color: #d8d2c3;
+    color: var(--muted);
+    border-color: var(--border);
   }
 
   textarea {
@@ -160,21 +238,23 @@
     font-family: 'Segoe UI Emoji', ui-monospace, Consolas, monospace;
     font-size: 0.95rem;
     padding: 0.75rem;
-    border: 1px solid #e2dccf;
+    border: 1px solid var(--border);
     border-radius: 8px;
     resize: vertical;
     line-height: 1.5;
+    background: var(--panel-bg);
+    color: var(--text);
   }
 
   .hint {
     margin: 0.4rem 0 0;
-    color: #6b6255;
+    color: var(--muted);
     font-size: 0.85rem;
   }
 
   .error {
     margin: 0.4rem 0 0;
-    color: #b3413b;
+    color: var(--error);
     font-size: 0.85rem;
   }
 </style>
