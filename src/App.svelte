@@ -1,5 +1,6 @@
 <script>
   import { transformText, countJuzLines } from './lib/khotmil.js';
+  import { registerSW } from 'virtual:pwa-register';
 
   function getInitialTheme() {
     try {
@@ -35,6 +36,19 @@
     theme = theme === 'dark' ? 'light' : 'dark';
   }
 
+  let updateAvailable = $state(false);
+
+  const updateServiceWorker = registerSW({
+    onNeedRefresh() {
+      updateAvailable = true;
+    },
+  });
+
+  function applyUpdate() {
+    updateAvailable = false;
+    updateServiceWorker(true);
+  }
+
   async function handlePaste() {
     pasteError = '';
     try {
@@ -60,6 +74,13 @@
     input = '';
   }
 </script>
+
+{#if updateAvailable}
+  <div class="update-banner">
+    <span>🔄 Versi baru tersedia.</span>
+    <button type="button" onclick={applyUpdate}>Perbarui</button>
+  </div>
+{/if}
 
 <main>
   <header>
@@ -171,6 +192,25 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
+  }
+
+  .update-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: var(--accent);
+    color: var(--accent-text);
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .update-banner button {
+    background: var(--accent-text);
+    color: var(--accent);
+    border-color: var(--accent-text);
+    padding: 0.3rem 0.75rem;
   }
 
   h1 {
