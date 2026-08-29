@@ -50,6 +50,22 @@
     theme = theme === 'dark' ? 'light' : 'dark';
   }
 
+  let isFullscreen = $state(false);
+
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.();
+    } else {
+      document.documentElement.requestFullscreen?.();
+    }
+  }
+
+  $effect(() => {
+    const onChange = () => (isFullscreen = !!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  });
+
   let updateAvailable = $state(false);
 
   const updateServiceWorker = registerSW({
@@ -70,6 +86,7 @@
       input = text;
     } catch (err) {
       pasteError = 'Gagal menempel dari clipboard. Silakan tempel manual (Ctrl+V) di kotak teks.';
+      setTimeout(() => (pasteError = ''), 4000);
     }
   }
 
@@ -99,15 +116,26 @@
 <main>
   <header>
     <h1>🌸 Khotmil Qur'an 🕋</h1>
-    <button
-      type="button"
-      class="theme-toggle"
-      onclick={toggleTheme}
-      aria-label={theme === 'dark' ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
-      title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
-    >
-      {theme === 'dark' ? '☀️' : '🌙'}
-    </button>
+    <div class="header-actions">
+      <button
+        type="button"
+        class="icon-toggle"
+        onclick={toggleFullscreen}
+        aria-label={isFullscreen ? 'Keluar dari layar penuh' : 'Layar penuh'}
+        title={isFullscreen ? 'Keluar dari layar penuh' : 'Layar penuh'}
+      >
+        {isFullscreen ? '✕' : '⛶'}
+      </button>
+      <button
+        type="button"
+        class="icon-toggle"
+        onclick={toggleTheme}
+        aria-label={theme === 'dark' ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
+        title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+      >
+        {theme === 'dark' ? '☀️' : '🌙'}
+      </button>
+    </div>
   </header>
 
   <section class="panel">
@@ -220,11 +248,16 @@
     flex: none;
   }
 
-  .theme-toggle {
+  .header-actions {
     position: absolute;
     top: 50%;
     right: 0;
     transform: translateY(-50%);
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .icon-toggle {
     background: transparent;
     border: 1px solid var(--border);
     color: var(--text);

@@ -74,6 +74,8 @@ export function transformText(text) {
   let currentGroup = null;
 
   const outLines = lines.map((line) => {
+    if (line.trim() === '') return '';
+
     const groupMatch = line.match(GROUP_LABEL_REGEX);
     if (groupMatch) {
       currentGroup = parseInt(groupMatch[1], 10);
@@ -97,7 +99,8 @@ export function transformText(text) {
     return collapseSpaces(`${prefix}Juz ${juz} : ${name}${suffix}`);
   });
 
-  return advanceDatesByOneWeek(outLines.join('\n'));
+  const joined = outLines.join('\n').replace(/\n{3,}/g, '\n\n');
+  return advanceDatesByOneWeek(joined);
 }
 
 export function countJuzLines(text) {

@@ -14,7 +14,7 @@ Aplikasi web untuk mempermudah pembuatan teks pembagian tugas mengaji (khotmil Q
 - Mengosongkan tanda 🕋 bagi yang sudah menyelesaikan tugasnya.
 - Menambah satu tanda ❎ bagi yang belum menyelesaikan tugasnya sampai periode berakhir (anggota dengan 🕋 dan ❎ sekaligus tetap dianggap selesai).
 - Menggeser tanggal yang tertera di teks maju 7 hari kalender.
-- Merapikan spasi ganda.
+- Merapikan spasi ganda dan baris kosong berlebih (maksimal satu baris kosong berturut-turut).
 - Mempertahankan bagian awal, akhir, dan label kelompok apa adanya, karena parsing dirancang toleran terhadap format teks yang diketik manual.
 
 ## Pengembangan
