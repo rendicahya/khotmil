@@ -241,18 +241,16 @@
   }
 
   header {
-    position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    gap: 0.75rem;
     flex: none;
+    /* line content edges up with the textarea inside the panels */
+    padding: 0 calc(0.75rem + 1px);
   }
 
   .header-actions {
-    position: absolute;
-    top: 50%;
-    right: 0;
-    transform: translateY(-50%);
     display: flex;
     gap: 0.4rem;
   }
