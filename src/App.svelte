@@ -20,6 +20,20 @@
   let pasteError = $state('');
   let theme = $state(getInitialTheme());
 
+  let inputEl = $state(null);
+  let outputEl = $state(null);
+  let syncing = false;
+
+  function syncScroll(from, to) {
+    if (syncing || !from || !to) return;
+    syncing = true;
+    to.scrollTop = from.scrollTop;
+    to.scrollLeft = from.scrollLeft;
+    requestAnimationFrame(() => {
+      syncing = false;
+    });
+  }
+
   let output = $derived(transformText(input));
   let juzCount = $derived(countJuzLines(input));
 
@@ -84,6 +98,7 @@
 
 <main>
   <header>
+    <h1>🌸 Khotmil Qur'an 🕋</h1>
     <button
       type="button"
       class="theme-toggle"
@@ -93,43 +108,49 @@
     >
       {theme === 'dark' ? '☀️' : '🌙'}
     </button>
-    <h1>🌸 Khotmil Qur'an 🕋</h1>
-    <p class="subtitle">Pembuat teks pembagian tugas mengaji</p>
   </header>
 
   <section class="panel">
     <div class="panel-header">
       <label for="input">Teks periode ini</label>
       <div class="actions">
+        {#if input}
+          <span class="hint">{juzCount} baris juz</span>
+        {/if}
         <button type="button" onclick={handlePaste}>📋 Tempel</button>
         <button type="button" class="ghost" onclick={handleClear} disabled={!input}>Bersihkan</button>
       </div>
     </div>
-    <textarea
-      id="input"
-      bind:value={input}
-      placeholder="Tempel teks pembagian tugas mengaji di sini..."
-      rows="16"
-    ></textarea>
     {#if pasteError}
       <p class="error">{pasteError}</p>
     {/if}
-    {#if input}
-      <p class="hint">{juzCount} baris juz terdeteksi</p>
-    {/if}
+    <textarea
+      id="input"
+      bind:this={inputEl}
+      bind:value={input}
+      onscroll={() => syncScroll(inputEl, outputEl)}
+      placeholder="Tempel teks pembagian tugas mengaji di sini..."
+    ></textarea>
   </section>
 
   <section class="panel">
     <div class="panel-header">
       <label for="output">Teks periode berikutnya</label>
       <div class="actions">
+        {#if copyStatus}
+          <span class="hint">{copyStatus}</span>
+        {/if}
         <button type="button" onclick={handleCopy} disabled={!output}>📄 Salin</button>
       </div>
     </div>
-    <textarea id="output" value={output} placeholder="Hasil akan muncul di sini..." rows="16" readonly></textarea>
-    {#if copyStatus}
-      <p class="hint">{copyStatus}</p>
-    {/if}
+    <textarea
+      id="output"
+      bind:this={outputEl}
+      value={output}
+      onscroll={() => syncScroll(outputEl, inputEl)}
+      placeholder="Hasil akan muncul di sini..."
+      readonly
+    ></textarea>
   </section>
 </main>
 
@@ -161,6 +182,16 @@
     color-scheme: light;
   }
 
+  :global(html, body) {
+    height: 100%;
+  }
+
+  :global(#app) {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
   :global(body) {
     margin: 0;
     background: var(--bg);
@@ -169,21 +200,31 @@
   }
 
   main {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
     max-width: 960px;
     margin: 0 auto;
-    padding: 1.5rem 1rem 3rem;
+    padding: 0.75rem 1rem 1rem;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 
   header {
     position: relative;
-    text-align: center;
-    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
   }
 
   .theme-toggle {
     position: absolute;
-    top: 0;
+    top: 50%;
     right: 0;
+    transform: translateY(-50%);
     background: transparent;
     border: 1px solid var(--border);
     color: var(--text);
@@ -219,22 +260,19 @@
   }
 
   h1 {
-    margin: 0 0 0.25rem;
-    font-size: 1.6rem;
-  }
-
-  .subtitle {
     margin: 0;
-    color: var(--muted);
-    font-size: 0.95rem;
+    font-size: 1.3rem;
   }
 
   .panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     background: var(--panel-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 1.25rem;
+    padding: 0.75rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
 
@@ -245,6 +283,7 @@
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
+    flex: none;
   }
 
   label {
@@ -253,6 +292,7 @@
 
   .actions {
     display: flex;
+    align-items: center;
     gap: 0.5rem;
   }
 
@@ -278,14 +318,16 @@
   }
 
   textarea {
+    flex: 1;
     width: 100%;
+    min-height: 0;
     box-sizing: border-box;
     font-family: 'Segoe UI Emoji', ui-monospace, Consolas, monospace;
     font-size: 0.95rem;
     padding: 0.75rem;
     border: 1px solid var(--border);
     border-radius: 8px;
-    resize: vertical;
+    resize: none;
     line-height: 1.5;
     background: var(--panel-bg);
     color: var(--text);
@@ -297,14 +339,15 @@
   }
 
   .hint {
-    margin: 0.4rem 0 0;
+    margin: 0;
     color: var(--muted);
     font-size: 0.85rem;
   }
 
   .error {
-    margin: 0.4rem 0 0;
+    margin: 0 0 0.5rem;
     color: var(--error);
     font-size: 0.85rem;
+    flex: none;
   }
 </style>

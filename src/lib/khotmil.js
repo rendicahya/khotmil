@@ -10,6 +10,10 @@ const VARIATION_SELECTOR = '️';
 // group 3 = name + completion marks after the colon
 const JUZ_LINE_REGEX = /^(.*?)juz\s*(\d{1,2})\s*:\s*(.*)$/i;
 
+// Matches a group label like " Kelompok 1:" tolerantly. Group 1 advances
+// two juz per period; every other group advances one.
+const GROUP_LABEL_REGEX = /^\s*kelompok\s*(\d+)/i;
+
 function stripMarks(rest) {
   return rest.split(KAABA).join('').split(CROSS).join('').split(VARIATION_SELECTOR).join('');
 }
@@ -21,8 +25,8 @@ function parseNameAndMarks(rest) {
   return { name, done, missCount };
 }
 
-function nextJuz(current) {
-  return (current % TOTAL_JUZ) + 1;
+function nextJuz(current, step) {
+  return ((current - 1 + step) % TOTAL_JUZ) + 1;
 }
 
 function collapseSpaces(line) {
@@ -67,7 +71,15 @@ export function transformText(text) {
 
   const lines = text.split(/\r\n|\r|\n/);
 
+  let currentGroup = null;
+
   const outLines = lines.map((line) => {
+    const groupMatch = line.match(GROUP_LABEL_REGEX);
+    if (groupMatch) {
+      currentGroup = parseInt(groupMatch[1], 10);
+      return collapseSpaces(line);
+    }
+
     const match = line.match(JUZ_LINE_REGEX);
     if (!match) return collapseSpaces(line);
 
@@ -78,7 +90,8 @@ export function transformText(text) {
     const { name, done, missCount } = parseNameAndMarks(rest);
     if (!name) return collapseSpaces(line);
 
-    const juz = nextJuz(juzNum);
+    const step = currentGroup === 1 ? 2 : 1;
+    const juz = nextJuz(juzNum, step);
     const suffix = done ? '' : ' ' + CROSS.repeat(missCount + 1);
 
     return collapseSpaces(`${prefix}Juz ${juz} : ${name}${suffix}`);

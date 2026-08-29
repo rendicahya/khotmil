@@ -10,7 +10,7 @@ Aplikasi web untuk mempermudah pembuatan teks pembagian tugas mengaji (khotmil Q
 
 ## Yang otomatis dilakukan
 
-- Menaikkan nomor juz setiap anggota ke juz berikutnya (setelah juz 30 kembali ke juz 1).
+- Menaikkan nomor juz setiap anggota ke juz berikutnya (setelah juz 30 kembali ke juz 1). Anggota di **Kelompok 1** naik 2 juz per periode, kelompok lain naik 1 juz.
 - Mengosongkan tanda 🕋 bagi yang sudah menyelesaikan tugasnya.
 - Menambah satu tanda ❎ bagi yang belum menyelesaikan tugasnya sampai periode berakhir (anggota dengan 🕋 dan ❎ sekaligus tetap dianggap selesai).
 - Menggeser tanggal yang tertera di teks maju 7 hari kalender.
