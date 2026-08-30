@@ -16,6 +16,7 @@
   }
 
   let input = $state('');
+  let chatInput = $state('');
   let copyStatus = $state('');
   let pasteError = $state('');
   let theme = $state(getInitialTheme());
@@ -34,8 +35,79 @@
     });
   }
 
-  let output = $derived(transformText(input));
   let juzCount = $derived(countJuzLines(input));
+
+  const GROUPS = [
+    { id: 'besuki', name: 'Besuki' },
+    { id: 'safinda', name: 'Safinda' },
+  ];
+  const DEFAULT_PERIODS = { besuki: 14, safinda: 1 };
+
+  function loadSettings() {
+    const fallback = { activeGroupId: 'besuki', periods: { ...DEFAULT_PERIODS } };
+    try {
+      const saved = JSON.parse(localStorage.getItem('khotmil-settings'));
+      if (saved && typeof saved === 'object') {
+        return {
+          activeGroupId: GROUPS.some((g) => g.id === saved.activeGroupId)
+            ? saved.activeGroupId
+            : fallback.activeGroupId,
+          periods: { ...DEFAULT_PERIODS, ...(saved.periods || {}) },
+        };
+      }
+    } catch (err) {
+      // ignore (bad JSON or storage disabled)
+    }
+    return fallback;
+  }
+
+  let settings = $state(loadSettings());
+  let settingsOpen = $state(false);
+
+  $effect(() => {
+    try {
+      localStorage.setItem('khotmil-settings', JSON.stringify(settings));
+    } catch (err) {
+      // ignore (e.g. storage disabled)
+    }
+  });
+
+  let activePeriodDays = $derived(
+    Math.max(1, Number(settings.periods[settings.activeGroupId]) || 1)
+  );
+
+  let output = $derived(
+    transformText(input, {
+      periodDays: activePeriodDays,
+      group: settings.activeGroupId,
+      chatText: chatInput,
+    })
+  );
+
+  function selectGroup(id) {
+    settings.activeGroupId = id;
+  }
+
+  function setPeriod(id, value) {
+    const n = parseInt(value, 10);
+    settings.periods[id] = Number.isFinite(n) && n > 0 ? n : 1;
+  }
+
+  $effect(() => {
+    if (!settingsOpen) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') settingsOpen = false;
+    };
+    const onClick = (e) => {
+      if (!e.target.closest('.settings-wrap')) settingsOpen = false;
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('click', onClick);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('click', onClick);
+    };
+  });
 
   $effect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -104,6 +176,20 @@
   function handleClear() {
     input = '';
   }
+
+  async function handlePasteChat() {
+    pasteError = '';
+    try {
+      chatInput = await navigator.clipboard.readText();
+    } catch (err) {
+      pasteError = 'Gagal menempel dari clipboard. Silakan tempel manual (Ctrl+V) di kotak teks.';
+      setTimeout(() => (pasteError = ''), 4000);
+    }
+  }
+
+  function handleClearChat() {
+    chatInput = '';
+  }
 </script>
 
 {#if updateAvailable}
@@ -117,6 +203,50 @@
   <header>
     <h1>🌸 Khotmil Qur'an 🕋</h1>
     <div class="header-actions">
+      <div class="settings-wrap">
+        <button
+          type="button"
+          class="icon-toggle"
+          onclick={() => (settingsOpen = !settingsOpen)}
+          aria-label="Pengaturan grup"
+          aria-expanded={settingsOpen}
+          title="Pengaturan grup"
+        >
+          ⚙️
+        </button>
+        {#if settingsOpen}
+          <div class="settings-popover" role="dialog" aria-label="Pengaturan grup">
+            <p class="settings-title">Grup &amp; periode</p>
+            {#each GROUPS as g}
+              <div class="settings-row">
+                <label class="settings-group">
+                  <input
+                    type="radio"
+                    name="active-group"
+                    checked={settings.activeGroupId === g.id}
+                    onchange={() => selectGroup(g.id)}
+                  />
+                  <span>{g.name}</span>
+                </label>
+                <span class="settings-period">
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={settings.periods[g.id]}
+                    onchange={(e) => setPeriod(g.id, e.currentTarget.value)}
+                    aria-label={`Periode ${g.name} (hari)`}
+                  />
+                  <span>hari</span>
+                </span>
+              </div>
+            {/each}
+            <p class="settings-note">
+              Tanggal pada teks digeser maju sesuai periode grup aktif.
+            </p>
+          </div>
+        {/if}
+      </div>
       <button
         type="button"
         class="icon-toggle"
@@ -180,6 +310,25 @@
       readonly
     ></textarea>
   </section>
+
+  {#if settings.activeGroupId === 'safinda'}
+    <section class="panel chat">
+      <div class="panel-header">
+        <label for="chat">Setoran via chat</label>
+        <div class="actions">
+          <button type="button" onclick={handlePasteChat}>📋 Tempel</button>
+          <button type="button" class="ghost" onclick={handleClearChat} disabled={!chatInput}>
+            Bersihkan
+          </button>
+        </div>
+      </div>
+      <textarea
+        id="chat"
+        bind:value={chatInput}
+        placeholder="Tempel pesan setoran dari chat, mis. [8/30, 15:45] Bu Fulan: juz 7-8 kholash"
+      ></textarea>
+    </section>
+  {/if}
 </main>
 
 <style>
@@ -271,6 +420,74 @@
     cursor: pointer;
   }
 
+  .settings-wrap {
+    position: relative;
+    display: flex;
+  }
+
+  .settings-popover {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0;
+    z-index: 10;
+    width: 15rem;
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: left;
+  }
+
+  .settings-title {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .settings-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .settings-period {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .settings-period input {
+    width: 3.25rem;
+    padding: 0.3rem 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel-bg);
+    color: var(--text);
+    font-size: 0.85rem;
+  }
+
+  .settings-note {
+    margin: 0.25rem 0 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+
   .update-banner {
     display: flex;
     align-items: center;
@@ -305,6 +522,10 @@
     border-radius: 12px;
     padding: 0.75rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .panel.chat {
+    flex: 0.5 1 0%;
   }
 
   .panel-header {
